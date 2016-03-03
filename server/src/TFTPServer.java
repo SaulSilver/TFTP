@@ -1,7 +1,5 @@
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.io.IOException;
+import java.net.*;
 
 public class TFTPServer {
 	public static final int TFTPPORT = 4970;
@@ -39,8 +37,7 @@ public class TFTPServer {
 		System.out.printf("Listening at port %d for new requests\n", TFTPPORT);
 
 		while(true) {        /* Loop to handle various requests */
-			final InetSocketAddress clientAddress= 
-				receiveFrom(socket, buf);
+			final InetSocketAddress clientAddress = receiveFrom(socket, buf);
 			if (clientAddress == null) /* If clientAddress is null, an error occurred in receiveFrom()*/
 				continue;
 
@@ -52,9 +49,8 @@ public class TFTPServer {
 					try {
 						DatagramSocket sendSocket= new DatagramSocket(0);
 
-						System.out.printf("%s request for %s from %s using port %d\n",
-								(reqtype == OP_RRQ)?"Read":"Write",
-								clientAddress.getHostName(), clientAddress.getPort());  
+						System.out.printf("%s request for %s from %s using port %d\n", (reqtype == OP_RRQ)?"Read":"Write",
+								clientAddress.getHostName(), clientAddress.getPort());
 
 						if (reqtype == OP_RRQ) {      /* read request */
 							requestedFile.insert(0, READDIR);
@@ -62,7 +58,7 @@ public class TFTPServer {
 						}
 						else {                       /* write request */
 							requestedFile.insert(0, WRITEDIR);
-							HandleRQ(sendSocket,requestedFile.toString(),OP_WRQ);  
+							HandleRQ(sendSocket,requestedFile.toString(),OP_WRQ);
 						}
 						sendSocket.close();
 					} catch (SocketException e) {
@@ -80,7 +76,15 @@ public class TFTPServer {
 	 */
 
 	private InetSocketAddress receiveFrom(DatagramSocket socket, byte[] buf) {
-		return null;
+		DatagramPacket receiveRequest = new DatagramPacket(buf, buf.length);
+		try {
+			socket.receive(receiveRequest);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println();
+		InetSocketAddress remoteBindPoint = new InetSocketAddress(receiveRequest.getAddress(), receiveRequest.getPort());
+		return remoteBindPoint;
 	}
 
 	private int ParseRQ(byte[] buf, StringBuffer requestedFile) {
